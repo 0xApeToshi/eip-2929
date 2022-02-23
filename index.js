@@ -1,6 +1,7 @@
-const { ethers } = require("ethers");
+const { ethers } = require("ethers")
+const fs = require("fs")
+const abi = JSON.parse(fs.readFileSync("abi.json", "utf8"))
 require('dotenv').config()
-contracts = require('folia-contracts')
 
 const network = "homestead";
 const provider = ethers.getDefaultProvider(network, {
@@ -9,39 +10,33 @@ const provider = ethers.getDefaultProvider(network, {
 
 
 async function run() {
-  wallet = new ethers.Wallet.fromMnemonic(process.env.MAINNET_MNEMONIC)
-  wallet = wallet.connect(provider)
-  auction = new ethers.Contract(contracts.ReserveAuction.networks['1'].address, contracts.ReserveAuction.abi, wallet)
+    wallet = new ethers.Wallet.fromMnemonic(process.env.MAINNET_MNEMONIC)
+    wallet = wallet.connect(provider)
+    const address = "0xb82FdA3F5752FC3b7243259e893B99DDB13D4546"; // contract address
+    contract = new ethers.Contract(address, abi, wallet)
 
-  overrides = {
-    gasLimit: 500000,
-    gasPrice: ethers.utils.parseUnits('150', 'gwei').toString(),
-    type: 1,
-    accessList: [
-      {
-        address: "0x397c2c9c2841bcc396ecaedbc00cd2cfd07de917", // admin gnosis safe proxy address
-        storageKeys: [
-            "0x0000000000000000000000000000000000000000000000000000000000000000"
+    overrides = {
+        gasLimit: 500000,
+        gasPrice: ethers.utils.parseUnits('150', 'gwei').toString(),
+        type: 1,
+        accessList: [
+            {
+                address: "0xDbaD7CbcA084DFf4E93B0f365978362aD8cc0A35", // admin gnosis safe proxy address
+                storageKeys: [
+                    "0x0000000000000000000000000000000000000000000000000000000000000000"
+                ]
+            },
+            {
+                address: '0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552',  // gnosis safe master address
+                storageKeys: []
+            }
         ]
-      },
-      {
-        address: "0xaF5c3455A72ecdfc316Bf00e356182B58585B40E", // proceedsRecipient gnosis safe proxy address
-        storageKeys: [
-            "0x0000000000000000000000000000000000000000000000000000000000000000"
-        ]
-      },
-      {
-        address: '0x34cfac646f301356faa8b21e94227e3583fe3f5f',  // gnosis safe master address
-        storageKeys: []
-      }
-    ]
-  }
+    }
 
-  work = 11000003
-  endAuctionTX = await auction.endAuction(work, overrides)
-  console.log({endAuctionTX})
-  resolved = await endAuctionTX.wait()
-  console.log({resolved})
+    withdrawTxn = await contract.withdrawETH(overrides)
+    console.log({ withdrawTxn })
+    resolved = await withdrawTxn.wait()
+    console.log({resolved})
 }
 
 run()
